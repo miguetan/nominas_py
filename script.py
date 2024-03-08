@@ -9,6 +9,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 import time
 
+
 archivo_pdf = "nominas.pdf"
 
 fecha_actual = datetime.datetime.now()
@@ -101,6 +102,7 @@ def enviar_email(destinatario, asunto, archivo_adjunto):
         log("*******Error al enviar el correo electrónico a " + destinatario + "\n\n\n")
         print("Error al enviar el correo electrónico:", str(e))
         return False
+
 
 
 # Comprobamos si el archivo existe
