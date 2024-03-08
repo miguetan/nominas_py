@@ -8,3 +8,5 @@ El archivo config.txt indica los datos de conexion con el servidor smtp.
 La conexion debe ser por ssl (no tls)
 
 El procesamiento se hace sobre un archivo llamado nominas.pdf que debe existir y contener tantas paginas como nominas se quieren enviar por correo
+
+Para lanzarlo debemos ejecutar el archivo por lotes 'Enviar Nomianas.bat'
