@@ -1,0 +1,4 @@
+remitente=email_remitente
+password=contraseña
+servidor=smtp_server
+puerto=smtp_port
