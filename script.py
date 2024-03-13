@@ -1,4 +1,5 @@
 import os
+import shutil
 from PyPDF2 import PdfReader, PdfWriter
 import re
 import datetime
@@ -14,6 +15,9 @@ archivo_pdf = "nominas.pdf"
 
 fecha_actual = datetime.datetime.now()
 nombre_log = "Resultado " + fecha_actual.strftime("%Y_%m_%d_%H_%M_%S") + ".txt"
+# Borramos la carpeta "errores" con todo su contenido
+if os.path.exists("errores"):
+    shutil.rmtree("errores")
 
 
 def log(mensaje):
@@ -21,7 +25,6 @@ def log(mensaje):
     with open(nombre_log, "a") as log_file:
         print(mensaje)
         log_file.write(f"{fecha_actual.strftime('%H:%M:%S')} - {mensaje}\n")
-
 
 def buscar_dni(pdf_path):
     # Creamos un objeto PdfReader para el archivo PDF
@@ -41,32 +44,52 @@ def buscar_dni(pdf_path):
     # Si no se encuentra ningún campo DNI, retornamos None
     return None
 
-
 def buscar_email_por_dni(dni):
-    # Cargamos el archivo Excel
-    df = pd.read_excel('emails.xls')
+    filename = 'emails.xlsx'
+    empresas = pd.ExcelFile('emails.xlsx').sheet_names
 
-    # Buscamos el DNI en la primera columna del DataFrame
+    # Cargamos el archivo Excel
+    df = pd.read_excel(filename,sheet_name=empresas[0])
+    # Buscar el DNI en la primera columna del DataFrame
     resultado = df[df.iloc[:, 0] == dni]
+    # Obtener el nombre de la hoja
+    empresa = empresas[0]
+    log(f"Buscando el DNI {dni} en la empresa {empresa}")
+
+    #si no lo encuentra en la primera hoja, lo busca en la segunda
+    if len(resultado) == 0:
+        # Cargamos el archivo Excel
+        df = pd.read_excel('emails.xlsx',sheet_name=empresas[1])
+        # Buscar el DNI en la primera columna del DataFrame
+        resultado = df[df.iloc[:, 0] == dni]
+        # Obtener el nombre de la hoja
+        empresa = empresas[1]
+        log(f"Buscando el DNI {dni} en la empresa {empresa}")
+
+
+
 
     # Si encontramos el DNI, devolvemos el email de la segunda columna
     if len(resultado) > 0:
-        return resultado.iloc[0, 1]
+        return resultado.iloc[0, 1] , empresa.lower()
     else:
         log(f"*****ERROR!! No se encuentra el DNI {dni} en emails.xls")
-        return False
+        return False , False
 
-def enviar_email(destinatario, asunto, archivo_adjunto):
-    log("Abriendo el archivo de configuración config.txt")
+def enviar_email(destinatario, asunto, archivo_adjunto, empresa):
     # Leer el archivo de configuración
     with open("config.txt", "r") as config_file:
         config_data = config_file.read()
 
     # Obtener los valores de configuración
-    remitente = re.search(r"remitente=(.*)", config_data).group(1)
-    password = re.search(r"password=(.*)", config_data).group(1)
-    servidor_smtp = re.search(r"servidor=(.*)", config_data).group(1)
-    puerto_smtp = int(re.search(r"puerto=(.*)", config_data).group(1))
+    try:
+        remitente = re.search(r"remitente_" + empresa +"=(.*)", config_data).group(1)
+        password = re.search(r"password_" + empresa +"=(.*)", config_data).group(1)
+        servidor_smtp = re.search(r"servidor_" + empresa +"=(.*)", config_data).group(1)
+        puerto_smtp = int(re.search(r"puerto_" + empresa +"=(.*)", config_data).group(1))
+    except Exception as e:
+        log("*****Error al leer la configuración del archivo config.txt")
+        return False
 
     log("Configuración leída correctamente")
 
@@ -104,8 +127,7 @@ def enviar_email(destinatario, asunto, archivo_adjunto):
         return False
 
 
-
-# Comprobamos si el archivo existe
+# Comprobamos si el archivo de nominas existe
 if os.path.isfile(archivo_pdf):
     # Abrimos el archivo PDF
     with open(archivo_pdf, "rb") as archivo:
@@ -134,17 +156,27 @@ if os.path.isfile(archivo_pdf):
             # Si se encuentra un DNI, lo imprimimos
             if dni:
                 log(f"Encontrado DNI {dni} en la nomina_{pagina + 1}.pdf")
-                email = buscar_email_por_dni(dni)
-                if email:
+                email, empresa = buscar_email_por_dni(dni)
+                if email and empresa:
                     log(f"Email asociado: {email}")
-                    enviar_email(email,"Adjuntamos nómina ", nombre_archivo)
+                    enviar_email(email,"Adjuntamos nómina ", nombre_archivo,empresa)
+                    os.remove(nombre_archivo)
                     time.sleep(5) # Esperamos 5 segundos para no saturar el servidor de correo
-
+                else:
+                    # Crear la carpeta "errores" si no existe
+                    if not os.path.exists("errores"):
+                        os.makedirs("errores")
+                    # Mover el archivo de la nómina a la carpeta de errores con el nombre del DNI
+                    nuevo_nombre = os.path.join("errores", f"{dni}.pdf")
+                    os.rename(nombre_archivo, nuevo_nombre)   
             else:
                 log(f"¡¡ERROR!! No se encuentra ningun DNI en nomina_{pagina + 1}.pdf")
-            
-            # Eliminamos el archivo temporal
-            os.remove(nombre_archivo)
-
-
+                # Crear la carpeta "errores" si no existe
+                if not os.path.exists("errores"):
+                    os.makedirs("errores")
+                # Mover el archivo de la nómina a la carpeta de errores con el nombre del DNI
+                nuevo_nombre = os.path.join("errores", f"{dni}.pdf")
+                os.rename(nombre_archivo, nuevo_nombre)   
+else:
+    log(f"¡¡ERROR!! El archivo {archivo_pdf} no existe")
 

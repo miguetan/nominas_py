@@ -10,3 +10,11 @@ La conexion debe ser por ssl (no tls)
 El procesamiento se hace sobre un archivo llamado nominas.pdf que debe existir y contener tantas paginas como nominas se quieren enviar por correo
 
 Para lanzarlo debemos ejecutar el archivo por lotes 'Enviar Nomianas.bat'
+
+
+REQUISITOS
+Python 3
+Instalar pyPDF2 y pandas
+python3 -m pip install pandas
+python3 -m pip install openpyxl
+pip3 install pyPDF2
