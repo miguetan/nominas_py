@@ -1,4 +1,4 @@
-remitente=email_remitente
-password=contraseña
-servidor=smtp_server
-puerto=smtp_port
+remitente_empresa=email_remitente
+password_empresa=contraseña
+servidor_empresa=smtp_server
+puerto_empresa=smtp_port
