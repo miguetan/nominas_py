@@ -34,7 +34,7 @@ def buscar_dni(pdf_path):
         # Iteramos sobre cada página del PDF
         for pagina in pdf_reader.pages:
             # Buscamos el patrón de un campo DNI en el texto de la página
-            dni_pattern = r"\b\d{8}[A-HJ-NP-TV-Z]\b"
+            dni_pattern = r"\b\d{8}[A-HJ-NP-TV-Z]\b|\b[A-HJ-NP-TV-Z]\d{7}[A-HJ-NP-TV-Z]\b"
             match = re.search(dni_pattern, pagina.extract_text())
 
             # Si se encuentra un campo DNI, lo retornamos
