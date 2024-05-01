@@ -44,37 +44,29 @@ def buscar_dni(pdf_path):
     # Si no se encuentra ningún campo DNI, retornamos None
     return None
 
-def buscar_email_por_dni(dni):
+def buscar_email_por_dni(dni,hoja=0):
     filename = 'emails.xlsx'
     empresas = pd.ExcelFile('emails.xlsx').sheet_names
 
-    # Cargamos el archivo Excel
-    df = pd.read_excel(filename,sheet_name=empresas[0])
-    # Buscar el DNI en la primera columna del DataFrame
+    # Leer el archivo de emails
+    df = pd.read_excel(filename, sheet_name=hoja)
+
+
+    # Buscar el DNI en la primera columna
     resultado = df[df.iloc[:, 0] == dni]
-    # Obtener el nombre de la hoja
-    empresa = empresas[0]
-    log(f"Buscando el DNI {dni} en la empresa {empresa}")
 
-    #si no lo encuentra en la primera hoja, lo busca en la segunda
-    if len(resultado) == 0:
-        # Cargamos el archivo Excel
-        df = pd.read_excel('emails.xlsx',sheet_name=empresas[1])
-        # Buscar el DNI en la primera columna del DataFrame
-        resultado = df[df.iloc[:, 0] == dni]
-        # Obtener el nombre de la hoja
-        empresa = empresas[1]
-        log(f"Buscando el DNI {dni} en la empresa {empresa}")
-
-
-
+    # Obtener el nombre de la empresa
+    empresa = empresas[hoja].lower()
 
     # Si encontramos el DNI, devolvemos el email de la segunda columna
     if len(resultado) > 0:
-        return resultado.iloc[0, 1] , empresa.lower()
+        log(f"Encontrado DNI {dni} en pestaña {empresa} del archivo emails.xls")
+        return resultado.iloc[0, 1], empresa.lower()
     else:
+        if hoja < len(empresas) - 1:
+            return buscar_email_por_dni(dni, hoja + 1)
         log(f"*****ERROR!! No se encuentra el DNI {dni} en emails.xls")
-        return False , False
+        return False, False
 
 def enviar_email(destinatario, asunto, archivo_adjunto, empresa):
     # Leer el archivo de configuración
@@ -87,6 +79,7 @@ def enviar_email(destinatario, asunto, archivo_adjunto, empresa):
         password = re.search(r"password_" + empresa +"=(.*)", config_data).group(1)
         servidor_smtp = re.search(r"servidor_" + empresa +"=(.*)", config_data).group(1)
         puerto_smtp = int(re.search(r"puerto_" + empresa +"=(.*)", config_data).group(1))
+        log("Remitente: " + remitente)
     except Exception as e:
         log("*****Error al leer la configuración del archivo config.txt")
         return False
@@ -158,7 +151,8 @@ if os.path.isfile(archivo_pdf):
                 log(f"Encontrado DNI {dni} en la nomina_{pagina + 1}.pdf")
                 email, empresa = buscar_email_por_dni(dni)
                 if email and empresa:
-                    log(f"Email asociado: {email}")
+                    log(f"Email asociado: {email} Empresa asociada: {empresa}")
+
                     enviar_email(email,"Adjuntamos nómina ", nombre_archivo,empresa)
                     os.remove(nombre_archivo)
                     time.sleep(5) # Esperamos 5 segundos para no saturar el servidor de correo
