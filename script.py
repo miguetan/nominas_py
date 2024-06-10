@@ -162,7 +162,10 @@ if os.path.isfile(archivo_pdf):
                         os.makedirs("errores")
                     # Mover el archivo de la nómina a la carpeta de errores con el nombre del DNI
                     nuevo_nombre = os.path.join("errores", f"{dni}.pdf")
-                    os.rename(nombre_archivo, nuevo_nombre)   
+                    try:
+                        os.rename(nombre_archivo, nuevo_nombre)
+                    except:
+                        nuevo_nombre = os.path.join("errores", f"{dni}_{pagina + 1}.pdf")
             else:
                 log(f"¡¡ERROR!! No se encuentra ningun DNI en nomina_{pagina + 1}.pdf")
                 # Crear la carpeta "errores" si no existe
