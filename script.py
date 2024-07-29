@@ -44,7 +44,7 @@ def buscar_dni(pdf_path):
     # Si no se encuentra ningún campo DNI, retornamos None
     return None
 
-def buscar_email_por_dni(dni,hoja=0):
+def buscar_email_por_dni(dni,hoja=0,remite=1):
     filename = 'emails.xlsx'
     empresas = pd.ExcelFile('emails.xlsx').sheet_names
 
@@ -55,8 +55,12 @@ def buscar_email_por_dni(dni,hoja=0):
     # Buscar el DNI en la primera columna
     resultado = df[df.iloc[:, 0] == dni]
 
-    # Obtener el nombre de la empresa
-    empresa = empresas[hoja].lower()
+    # Obtener el nombre de la empresa. lo ha de fininido el usuario al principio del script
+    if remite == "1":
+        empresa = "iberclean"
+    else:
+        empresa = "lei"    
+    
 
     # Si encontramos el DNI, devolvemos el email de la segunda columna
     if len(resultado) > 0:
@@ -110,7 +114,7 @@ def enviar_email(destinatario, asunto, archivo_adjunto, empresa):
         servidor.login(remitente, password)
         log("Conexión al servidor SMTP establecida correctamente")
         log("Enviando correo electrónico a " + destinatario)
-        servidor.sendmail(remitente, destinatario, mensaje.as_string())
+        #servidor.sendmail(remitente, destinatario, mensaje.as_string())
         servidor.quit()
         log("Correo electrónico enviado correctamente a " + destinatario  + "\n\n\n")
         return True
@@ -118,6 +122,11 @@ def enviar_email(destinatario, asunto, archivo_adjunto, empresa):
         log("*******Error al enviar el correo electrónico a " + destinatario + "\n\n\n")
         print("Error al enviar el correo electrónico:", str(e))
         return False
+
+
+#preguntamos al usuario que destinatario quiere. 1 para Iberclean y 2 para Limpiezas Lei
+remitente = input("¿Cual es el email remitente? \n[1] Iberclean \n[2] Limpiezas Lei\n ")
+
 
 
 # Comprobamos si el archivo de nominas existe
@@ -153,6 +162,11 @@ if os.path.isfile(archivo_pdf):
                 if email and empresa:
                     log(f"Email asociado: {email} Empresa asociada: {empresa}")
 
+                    if remitente == "1":
+                        empresa = "iberclean"
+                    else:
+                        empresa = "lei"
+                        
                     enviar_email(email,"Adjuntamos nómina ", nombre_archivo,empresa)
                     os.remove(nombre_archivo)
                     time.sleep(5) # Esperamos 5 segundos para no saturar el servidor de correo
